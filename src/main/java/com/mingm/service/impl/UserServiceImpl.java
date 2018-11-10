@@ -3,13 +3,19 @@ package com.mingm.service.impl;
 import com.mingm.mapper.UsersMapper;
 import com.mingm.pojo.Users;
 import com.mingm.service.UserService;
+import com.mingm.utils.FastDFSClient;
+import com.mingm.utils.FileUtils;
+import com.mingm.utils.QRCodeUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.n3r.idworker.Sid;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import tk.mybatis.mapper.entity.Example;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 
 /**
  * @author: panmm
@@ -17,12 +23,19 @@ import javax.annotation.Resource;
  * @description:
  */
 @Service
+@Slf4j
 public class UserServiceImpl implements UserService {
     @Resource
     private UsersMapper usersMapper;
 
     @Resource
     private Sid sid;
+
+    @Resource
+    private QRCodeUtils qrCodeUtils;
+
+    @Resource
+    private FastDFSClient fastDFSClient;
 
     @Transactional(propagation = Propagation.SUPPORTS)
     @Override
@@ -54,8 +67,19 @@ public class UserServiceImpl implements UserService {
 
         String userId = sid.nextShort();
 
-        //TODO 为每个用户生成一个唯一的二维码
-        user.setQrcode("");
+        // 为每个用户生成一个唯一的二维码
+        String qrCodePath = "D:\\mingmChat_img\\qrcode\\user" + userId + "qrcode.png";
+        // muxin_qrcode:[username]
+        qrCodeUtils.createQRCode(qrCodePath, "mingmChat_qrcode:" + userId);
+        MultipartFile qrCodeFile = FileUtils.fileToMultipart(qrCodePath);
+
+        String qrCodeUrl = "";
+        try {
+            qrCodeUrl = fastDFSClient.uploadQRCode(qrCodeFile);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+        }
+        user.setQrcode(qrCodeUrl);
 
         user.setId(userId);
 

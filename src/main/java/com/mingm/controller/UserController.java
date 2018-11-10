@@ -72,11 +72,17 @@ public class UserController {
         return MingmJSONResult.ok(usersVO);
     }
 
+    /**
+     * 上传用户头像
+     * @param userBO
+     * @return
+     * @throws Exception
+     */
     @PostMapping("/uploadFaceBase64")
     public MingmJSONResult uploadFaceBase64(@RequestBody UsersBO userBO) throws Exception {
         // 获取前端传过来的base64字符串, 然后转换为文件对象再上传
         String base64Data = userBO.getFaceData();
-        String userFacePath = "D:\\mingmChat_img\\" + userBO.getUserId() + "userface64.png";
+        String userFacePath = "D:\\mingmChat_img\\userFace\\" + userBO.getUserId() + "userface64.png";
         FileUtils.base64ToFile(userFacePath, base64Data);
 
         // 上传文件到fastdfs
@@ -97,6 +103,25 @@ public class UserController {
         user.setId(userBO.getUserId());
         user.setFaceImage(thumpImgUrl);
         user.setFaceImageBig(url);
+
+        Users result = userService.updateUserInfo(user);
+        UsersVO usersVO = new UsersVO();
+        BeanUtils.copyProperties(result, usersVO);
+        return MingmJSONResult.ok(usersVO);
+    }
+
+    /**
+     * 设置昵称
+     * @param userBO
+     * @return
+     * @throws Exception
+     */
+    @PostMapping("/setNickname")
+    public MingmJSONResult setNickname(@RequestBody UsersBO userBO) throws Exception {
+
+        Users user = new Users();
+        user.setId(userBO.getUserId());
+        user.setNickname(userBO.getNickname());
 
         Users result = userService.updateUserInfo(user);
         UsersVO usersVO = new UsersVO();
