@@ -1,9 +1,13 @@
 package com.mingm.controller;
 
 import com.mingm.pojo.Users;
+import com.mingm.pojo.bo.UsersBO;
 import com.mingm.pojo.vo.UsersVO;
 import com.mingm.service.UserService;
+import com.mingm.utils.FastDFSClient;
+import com.mingm.utils.FileUtils;
 import com.mingm.utils.MingmJSONResult;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 
 import com.mingm.utils.MD5Utils;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * @author: panmm
@@ -19,10 +24,14 @@ import com.mingm.utils.MD5Utils;
  */
 @RestController
 @RequestMapping("u")
+@Slf4j
 public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private FastDFSClient fastDFSClient;
 
     /**
      * 用户注册/登录
@@ -60,6 +69,38 @@ public class UserController {
         }
         UsersVO usersVO = new UsersVO();
         BeanUtils.copyProperties(userResult, usersVO);
+        return MingmJSONResult.ok(usersVO);
+    }
+
+    @PostMapping("/uploadFaceBase64")
+    public MingmJSONResult uploadFaceBase64(@RequestBody UsersBO userBO) throws Exception {
+        // 获取前端传过来的base64字符串, 然后转换为文件对象再上传
+        String base64Data = userBO.getFaceData();
+        String userFacePath = "D:\\mingmChat_img\\" + userBO.getUserId() + "userface64.png";
+        FileUtils.base64ToFile(userFacePath, base64Data);
+
+        // 上传文件到fastdfs
+        MultipartFile faceFile = FileUtils.fileToMultipart(userFacePath);
+        String url = fastDFSClient.uploadBase64(faceFile);
+        log.info("存储头像的url = " + url);
+
+        //		"dhawuidhwaiuh3u89u98432.png"
+        //		"dhawuidhwaiuh3u89u98432_80x80.png"
+
+        // 获取缩略图的url
+        String thump = "_80x80.";
+        String arr[] = url.split("\\.");
+        String thumpImgUrl = arr[0] + thump + arr[1];
+
+        // 更新用户头像
+        Users user = new Users();
+        user.setId(userBO.getUserId());
+        user.setFaceImage(thumpImgUrl);
+        user.setFaceImageBig(url);
+
+        Users result = userService.updateUserInfo(user);
+        UsersVO usersVO = new UsersVO();
+        BeanUtils.copyProperties(result, usersVO);
         return MingmJSONResult.ok(usersVO);
     }
 }
