@@ -1,5 +1,7 @@
 package com.mingm.controller;
 
+import com.mingm.enums.OperatorFriendRequestTypeEnum;
+import com.mingm.enums.SearchFriendsStatusEnum;
 import com.mingm.pojo.Users;
 import com.mingm.pojo.bo.UsersBO;
 import com.mingm.pojo.vo.UsersVO;
@@ -159,5 +161,151 @@ public class UserController {
         UsersVO usersVO = new UsersVO();
         BeanUtils.copyProperties(result, usersVO);
         return MingmJSONResult.ok(usersVO);
+    }
+
+    /**
+     * 搜索好友接口, 根据账号做匹配查询而不是模糊查询
+     * @param myUserId
+     * @param friendUsername
+     * @return
+     * @throws Exception
+     */
+    @PostMapping("/search")
+    public MingmJSONResult searchUser(String myUserId, String friendUsername)
+            throws Exception {
+        // 0. 判断 myUserId friendUsername 不能为空
+        if (StringUtils.isBlank(myUserId)
+                || StringUtils.isBlank(friendUsername)) {
+            return MingmJSONResult.errorMsg("");
+        }
+
+        // 前置条件 - 1. 搜索的用户如果不存在，返回[无此用户]
+        // 前置条件 - 2. 搜索账号是你自己，返回[不能添加自己]
+        // 前置条件 - 3. 搜索的朋友已经是你的好友，返回[该用户已经是你的好友]
+        Integer status = userService.preconditionSearchFriends(myUserId, friendUsername);
+        if (status.equals(SearchFriendsStatusEnum.SUCCESS.status)) {
+            Users user = userService.queryUserInfoByUsername(friendUsername);
+            UsersVO userVO = new UsersVO();
+            BeanUtils.copyProperties(user, userVO);
+            return MingmJSONResult.ok(userVO);
+        } else {
+            String errorMsg = SearchFriendsStatusEnum.getMsgByKey(status);
+            return MingmJSONResult.errorMsg(errorMsg);
+        }
+    }
+
+    /**
+     * 通过搜索好友接口, 根据账号做匹配查询而不是模糊查询
+     * @param myUserId
+     * @param friendUserId
+     * @return
+     * @throws Exception
+     */
+    @PostMapping("/searchQRCode")
+    public MingmJSONResult searchUserByQRCode(String myUserId, String friendUserId)
+            throws Exception {
+        // 0. 判断 myUserId friendUserId 不能为空
+        if (StringUtils.isBlank(myUserId)
+                || StringUtils.isBlank(friendUserId)) {
+            return MingmJSONResult.errorMsg("");
+        }
+
+        // 前置条件 - 1. 搜索的用户如果不存在，返回[无此用户]
+        // 前置条件 - 2. 搜索账号是你自己，返回[不能添加自己]
+        // 前置条件 - 3. 搜索的朋友已经是你的好友，返回[该用户已经是你的好友]
+        Integer status = userService.preconditionSearchFriendsByQRCode(myUserId, friendUserId);
+        if (status.equals(SearchFriendsStatusEnum.SUCCESS.status)) {
+            Users user = userService.queryUserInfoByUserId(friendUserId);
+            UsersVO userVO = new UsersVO();
+            BeanUtils.copyProperties(user, userVO);
+            return MingmJSONResult.ok(userVO);
+        } else {
+            String errorMsg = SearchFriendsStatusEnum.getMsgByKey(status);
+            return MingmJSONResult.errorMsg(errorMsg);
+        }
+    }
+
+    /**
+     * 发送添加好友请求
+     * @param myUserId
+     * @param friendUsername
+     * @return
+     * @throws Exception
+     */
+    @PostMapping("/addFriendRequest")
+    public MingmJSONResult addFriendRequest(String myUserId, String friendUsername)
+            throws Exception {
+
+        // 0. 判断 myUserId friendUsername 不能为空
+        if (StringUtils.isBlank(myUserId)
+                || StringUtils.isBlank(friendUsername)) {
+            return MingmJSONResult.errorMsg("");
+        }
+
+        // 前置条件 - 1. 搜索的用户如果不存在，返回[无此用户]
+        // 前置条件 - 2. 搜索账号是你自己，返回[不能添加自己]
+        // 前置条件 - 3. 搜索的朋友已经是你的好友，返回[该用户已经是你的好友]
+        Integer status = userService.preconditionSearchFriends(myUserId, friendUsername);
+        if (status.equals(SearchFriendsStatusEnum.SUCCESS.status)) {
+            userService.sendFriendRequest(myUserId, friendUsername);
+        } else {
+            String errorMsg = SearchFriendsStatusEnum.getMsgByKey(status);
+            return MingmJSONResult.errorMsg(errorMsg);
+        }
+
+        return MingmJSONResult.ok();
+    }
+
+    /**
+     * 发送添加好友的请求
+     * @param userId
+     * @return
+     */
+    @PostMapping("/queryFriendRequests")
+    public MingmJSONResult queryFriendRequests(String userId) {
+
+        // 0. 判断不能为空
+        if (StringUtils.isBlank(userId)) {
+            return MingmJSONResult.errorMsg("");
+        }
+
+        // 1. 查询用户接受到的朋友申请
+        return MingmJSONResult.ok(userService.queryFriendRequestList(userId));
+    }
+
+    /**
+     * 通过或者忽略朋友请求
+     * @param acceptUserId
+     * @param sendUserId
+     * @param operType
+     * @return
+     */
+    @PostMapping("/operFriendRequest")
+    public MingmJSONResult operFriendRequest(String acceptUserId, String sendUserId,
+                                             Integer operType) {
+
+        // 0. acceptUserId sendUserId operType 判断不能为空
+        if (StringUtils.isBlank(acceptUserId)
+                || StringUtils.isBlank(sendUserId)
+                || operType == null) {
+            return MingmJSONResult.errorMsg("");
+        }
+
+        // 1. 如果operType 没有对应的枚举值，则直接抛出空错误信息
+        if (StringUtils.isBlank(OperatorFriendRequestTypeEnum.getMsgByType(operType))) {
+            return MingmJSONResult.errorMsg("");
+        }
+
+        if (operType.equals(OperatorFriendRequestTypeEnum.IGNORE.type)){
+            // 2. 判断如果忽略好友请求，则直接删除好友请求的数据库表记录
+            userService.deleteFriendRequest(sendUserId, acceptUserId);
+        } else if (operType.equals(OperatorFriendRequestTypeEnum.PASS.type)) {
+            // 3. 判断如果是通过好友请求，则互相增加好友记录到数据库对应的表
+            //	   然后删除好友请求的数据库表记录
+            userService.passFriendRequest(sendUserId, acceptUserId);
+        }
+
+        return MingmJSONResult.ok();
+
     }
 }
