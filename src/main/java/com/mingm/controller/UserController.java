@@ -17,6 +17,8 @@ import javax.annotation.Resource;
 import com.mingm.utils.MD5Utils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Random;
+
 /**
  * @author: panmm
  * @date: 2018/11/9 00:52
@@ -80,13 +82,20 @@ public class UserController {
      */
     @PostMapping("/uploadFaceBase64")
     public MingmJSONResult uploadFaceBase64(@RequestBody UsersBO userBO) throws Exception {
+        log.info("上传用户头像开始");
         // 获取前端传过来的base64字符串, 然后转换为文件对象再上传
         String base64Data = userBO.getFaceData();
-        String userFacePath = "D:\\mingmChat_img\\userFace\\" + userBO.getUserId() + "userface64.png";
+        String userFacePath = "D:\\mingmChat_img\\userFace\\"
+                + userBO.getUserId()
+                +new Random().nextInt(
+                100000000)
+                + "userface64.png";
         FileUtils.base64ToFile(userFacePath, base64Data);
 
         // 上传文件到fastdfs
+        log.info("上传文件到fastdfs开始");
         MultipartFile faceFile = FileUtils.fileToMultipart(userFacePath);
+        log.info("上传文件到fastdfs结束");
         String url = fastDFSClient.uploadBase64(faceFile);
         log.info("存储头像的url = " + url);
 
@@ -107,6 +116,7 @@ public class UserController {
         Users result = userService.updateUserInfo(user);
         UsersVO usersVO = new UsersVO();
         BeanUtils.copyProperties(result, usersVO);
+        log.info("上传用户头像结束");
         return MingmJSONResult.ok(usersVO);
     }
 
@@ -122,6 +132,28 @@ public class UserController {
         Users user = new Users();
         user.setId(userBO.getUserId());
         user.setNickname(userBO.getNickname());
+
+        Users result = userService.updateUserInfo(user);
+        UsersVO usersVO = new UsersVO();
+        BeanUtils.copyProperties(result, usersVO);
+        return MingmJSONResult.ok(usersVO);
+    }
+
+    /**
+     * 修改帐号
+     * @param userBO
+     * @return
+     * @throws Exception
+     */
+    @PostMapping("/setUsername")
+    public MingmJSONResult setUsername(@RequestBody UsersBO userBO) throws Exception {
+        if (userService.queryUsernameIsExist(userBO.getUsername())) {
+            return MingmJSONResult.errorMsg("该帐号名重复或已被占用！");
+        }
+
+        Users user = new Users();
+        user.setId(userBO.getUserId());
+        user.setUsername(userBO.getUsername());
 
         Users result = userService.updateUserInfo(user);
         UsersVO usersVO = new UsersVO();

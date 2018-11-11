@@ -31,5 +31,11 @@ public interface UserService {
      */
     Users saveUser(Users user);
 
+    /**
+     * 更新用户信息
+     * @param user
+     * @return
+     */
     Users updateUserInfo(Users user);
+
 }
