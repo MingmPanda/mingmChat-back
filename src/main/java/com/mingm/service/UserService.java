@@ -2,6 +2,7 @@ package com.mingm.service;
 
 import com.mingm.pojo.Users;
 import com.mingm.pojo.vo.FriendRequestVO;
+import com.mingm.pojo.vo.MyFriendsVO;
 
 import java.util.List;
 
@@ -101,5 +102,12 @@ public interface UserService {
      * @param acceptUserId
      */
     void passFriendRequest(String sendUserId, String acceptUserId);
+
+    /**
+     * 查询好友列表
+     * @param userId
+     * @return
+     */
+    List<MyFriendsVO> queryMyFriends(String userId);
 
 }

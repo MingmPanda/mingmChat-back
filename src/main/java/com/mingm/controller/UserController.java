@@ -4,6 +4,7 @@ import com.mingm.enums.OperatorFriendRequestTypeEnum;
 import com.mingm.enums.SearchFriendsStatusEnum;
 import com.mingm.pojo.Users;
 import com.mingm.pojo.bo.UsersBO;
+import com.mingm.pojo.vo.MyFriendsVO;
 import com.mingm.pojo.vo.UsersVO;
 import com.mingm.service.UserService;
 import com.mingm.utils.FastDFSClient;
@@ -19,6 +20,7 @@ import javax.annotation.Resource;
 import com.mingm.utils.MD5Utils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -305,7 +307,27 @@ public class UserController {
             userService.passFriendRequest(sendUserId, acceptUserId);
         }
 
-        return MingmJSONResult.ok();
+        // 4. 数据库查询好友列表
+        List<MyFriendsVO> myFirends = userService.queryMyFriends(acceptUserId);
+        return MingmJSONResult.ok(myFirends);
 
+    }
+
+    /**
+     * 查询我的好友列表
+     * @param userId
+     * @return
+     */
+    @PostMapping("/myFriends")
+    public MingmJSONResult myFriends(String userId) {
+        // 0. userId 判断不能为空
+        if (StringUtils.isBlank(userId)) {
+            return MingmJSONResult.errorMsg("");
+        }
+
+        // 1. 数据库查询好友列表
+        List<MyFriendsVO> myFirends = userService.queryMyFriends(userId);
+
+        return MingmJSONResult.ok(myFirends);
     }
 }

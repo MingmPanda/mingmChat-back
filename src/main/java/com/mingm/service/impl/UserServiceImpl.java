@@ -9,6 +9,7 @@ import com.mingm.pojo.FriendsRequest;
 import com.mingm.pojo.MyFriends;
 import com.mingm.pojo.Users;
 import com.mingm.pojo.vo.FriendRequestVO;
+import com.mingm.pojo.vo.MyFriendsVO;
 import com.mingm.service.UserService;
 import com.mingm.utils.FastDFSClient;
 import com.mingm.utils.FileUtils;
@@ -248,5 +249,12 @@ public class UserServiceImpl implements UserService {
         myFriends.setMyFriendUserId(acceptUserId);
         myFriends.setMyUserId(sendUserId);
         myFriendsMapper.insert(myFriends);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    @Override
+    public List<MyFriendsVO> queryMyFriends(String userId) {
+        List<MyFriendsVO> myFirends = usersMapperCustom.queryMyFriends(userId);
+        return myFirends;
     }
 }
