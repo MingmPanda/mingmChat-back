@@ -1,10 +1,12 @@
 package com.mingm.service.impl;
 
+import com.mingm.enums.MsgActionEnum;
+import com.mingm.enums.MsgSignFlagEnum;
 import com.mingm.enums.SearchFriendsStatusEnum;
-import com.mingm.mapper.FriendsRequestMapper;
-import com.mingm.mapper.MyFriendsMapper;
-import com.mingm.mapper.UsersMapper;
-import com.mingm.mapper.UsersMapperCustom;
+import com.mingm.mapper.*;
+import com.mingm.netty.ChatMsg;
+import com.mingm.netty.DataContent;
+import com.mingm.netty.UserChannelRel;
 import com.mingm.pojo.FriendsRequest;
 import com.mingm.pojo.MyFriends;
 import com.mingm.pojo.Users;
@@ -13,7 +15,10 @@ import com.mingm.pojo.vo.MyFriendsVO;
 import com.mingm.service.UserService;
 import com.mingm.utils.FastDFSClient;
 import com.mingm.utils.FileUtils;
+import com.mingm.utils.JsonUtils;
 import com.mingm.utils.QRCodeUtils;
+import io.netty.channel.Channel;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import lombok.extern.slf4j.Slf4j;
 import org.n3r.idworker.Sid;
 import org.springframework.stereotype.Service;
@@ -47,6 +52,9 @@ public class UserServiceImpl implements UserService {
 
     @Resource
     private FriendsRequestMapper friendsRequestMapper;
+
+    @Resource
+    private ChatMsgMapper chatMsgMapper;
 
     @Resource
     private Sid sid;
@@ -239,6 +247,17 @@ public class UserServiceImpl implements UserService {
         saveFriends(sendUserId, acceptUserId);
         saveFriends(acceptUserId, sendUserId);
         deleteFriendRequest(sendUserId, acceptUserId);
+
+        Channel sendChannel = UserChannelRel.get(sendUserId);
+        if (sendChannel != null) {
+            // 使用websocket主动推送消息到请求发起者，更新他的通讯录列表为最新
+            DataContent dataContent = new DataContent();
+            dataContent.setAction(MsgActionEnum.PULL_FRIEND.type);
+
+            sendChannel.writeAndFlush(
+                    new TextWebSocketFrame(
+                            JsonUtils.objectToJson(dataContent)));
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -256,5 +275,28 @@ public class UserServiceImpl implements UserService {
     public List<MyFriendsVO> queryMyFriends(String userId) {
         List<MyFriendsVO> myFirends = usersMapperCustom.queryMyFriends(userId);
         return myFirends;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    @Override
+    public String saveMsg(ChatMsg chatMsg) {
+        com.mingm.pojo.ChatMsg msgDB = new com.mingm.pojo.ChatMsg();
+        String msgId = sid.nextShort();
+        msgDB.setId(msgId);
+        msgDB.setAcceptUserId(chatMsg.getReceiverId());
+        msgDB.setSendUserId(chatMsg.getSenderId());
+        msgDB.setCreateTime(new Date());
+        msgDB.setSignFlag(MsgSignFlagEnum.unsign.type);
+        msgDB.setMsg(chatMsg.getMsg());
+
+        chatMsgMapper.insert(msgDB);
+
+        return msgId;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    @Override
+    public void updateMsgSigned(List<String> msgIdList) {
+        usersMapperCustom.batchUpdateMsgSigned(msgIdList);
     }
 }
