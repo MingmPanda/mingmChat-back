@@ -124,4 +124,11 @@ public interface UserService {
      */
     void updateMsgSigned(List<String> msgIdList);
 
+    /**
+     * 获取未签收消息列表
+     * @param acceptUserId
+     * @return
+     */
+    List<com.mingm.pojo.ChatMsg> getUnReadMsgList(String acceptUserId);
+
 }

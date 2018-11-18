@@ -299,4 +299,16 @@ public class UserServiceImpl implements UserService {
     public void updateMsgSigned(List<String> msgIdList) {
         usersMapperCustom.batchUpdateMsgSigned(msgIdList);
     }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    @Override
+    public List<com.mingm.pojo.ChatMsg> getUnReadMsgList(String acceptUserId) {
+        Example chatExample = new Example(com.mingm.pojo.ChatMsg.class);
+        Criteria chatCriteria = chatExample.createCriteria();
+        chatCriteria.andEqualTo("signFlag", 0);
+        chatCriteria.andEqualTo("acceptUserId", acceptUserId);
+
+        List<com.mingm.pojo.ChatMsg> result = chatMsgMapper.selectByExample(chatExample);
+        return result;
+    }
 }

@@ -330,4 +330,22 @@ public class UserController {
 
         return MingmJSONResult.ok(myFirends);
     }
+
+    /**
+     * 用户手机端获取未签收的消息列表
+     * @param acceptUserId
+     * @return
+     */
+    @PostMapping("/getUnReadMsgList")
+    public MingmJSONResult getUnReadMsgList(String acceptUserId) {
+        // 0. userId 判断不能为空
+        if (StringUtils.isBlank(acceptUserId)) {
+            return MingmJSONResult.errorMsg("");
+        }
+
+        // 查询列表
+        List<com.mingm.pojo.ChatMsg> unreadMsgList = userService.getUnReadMsgList(acceptUserId);
+
+        return MingmJSONResult.ok(unreadMsgList);
+    }
 }
