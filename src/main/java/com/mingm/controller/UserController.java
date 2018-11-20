@@ -64,6 +64,9 @@ public class UserController {
             if (userResult == null) {
                 return MingmJSONResult.errorMsg("用户名或密码不正确...");
             }
+
+            //获取登陆当前手机的cid,更新cid
+            userService.updateCid(user.getUsername(), user.getCid());
         } else {
             // 1.2 注册
             user.setNickname(user.getUsername());

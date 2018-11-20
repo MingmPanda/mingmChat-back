@@ -12,6 +12,7 @@ import com.mingm.pojo.MyFriends;
 import com.mingm.pojo.Users;
 import com.mingm.pojo.vo.FriendRequestVO;
 import com.mingm.pojo.vo.MyFriendsVO;
+import com.mingm.push.AsynCenter;
 import com.mingm.service.UserService;
 import com.mingm.utils.FastDFSClient;
 import com.mingm.utils.FileUtils;
@@ -65,6 +66,9 @@ public class UserServiceImpl implements UserService {
     @Resource
     private FastDFSClient fastDFSClient;
 
+    @Resource
+    private AsynCenter asynCenter;
+
     @Transactional(propagation = Propagation.SUPPORTS)
     @Override
     public boolean queryUsernameIsExist(String username) {
@@ -87,6 +91,19 @@ public class UserServiceImpl implements UserService {
 
 
         return result;
+    }
+
+    @Override
+    public void updateCid(String username, String cid) {
+        Example userExample = new Example(Users.class);
+        Criteria criteria = userExample.createCriteria();
+        criteria.andEqualTo("username", username);
+
+        Users user = new Users();
+        user.setCid(cid);
+
+        usersMapper.updateByExampleSelective(user, userExample);
+
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -112,6 +129,7 @@ public class UserServiceImpl implements UserService {
         user.setId(userId);
 
         usersMapper.insert(user);
+
         return user;
     }
 
@@ -207,6 +225,7 @@ public class UserServiceImpl implements UserService {
 
         // 根据用户名把朋友信息查询出来
         Users friend = queryUserInfoByUsername(friendUsername);
+        Users me = queryUserById(myUserId);
 
         // 1. 查询发送好友请求记录表
         Example fre = new Example(FriendsRequest.class);
@@ -225,6 +244,9 @@ public class UserServiceImpl implements UserService {
             request.setRequestDateTime(new Date());
             friendsRequestMapper.insert(request);
         }
+
+        //异步发送好友请求的推送通知
+        asynCenter.sendPush("好友请求", me.getUsername() + " 请求添加你为好友~", friend.getCid());
     }
 
     @Override

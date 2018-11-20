@@ -1,6 +1,8 @@
 package com.mingm.netty;
 
 import com.mingm.enums.MsgActionEnum;
+import com.mingm.pojo.Users;
+import com.mingm.push.AsynCenter;
 import com.mingm.service.UserService;
 import com.mingm.utils.JsonUtils;
 import com.mingm.utils.SpringUtil;
@@ -64,24 +66,32 @@ public class ChatHandler extends SimpleChannelInboundHandler<TextWebSocketFrame>
             String msgId = userService.saveMsg(chatMsg);
             chatMsg.setMsgId(msgId);
 
+
             DataContent dataContentMsg = new DataContent();
             dataContentMsg.setChatMsg(chatMsg);
+
+            //获取接收者消息，用于推送
+            Users sender = userService.queryUserInfoByUserId(senderId);
+            Users receiver = userService.queryUserInfoByUserId(receiverId);
+            AsynCenter asynCenter = AsynCenter.getInstance();
 
             // 发送消息
             // 从全局用户Channel关系中获取接受方的channel
             Channel receiverChannel = UserChannelRel.get(receiverId);
             if (receiverChannel == null) {
-                // TODO channel为空代表用户离线，推送消息（JPush，个推，小米推送）
+                // channel为空代表用户离线，推送消息（JPush，个推，小米推送）
+                asynCenter.sendPush(sender.getNickname(), msgText, receiver.getCid());
             } else {
                 // 当receiverChannel不为空的时候，从ChannelGroup去查找对应的channel是否存在
-                Channel findChannel = users.find(receiverChannel.id());
+                Channel findChannel = ChatHandler.users.find(receiverChannel.id());
                 if (findChannel != null) {
                     // 用户在线
                     receiverChannel.writeAndFlush(
                             new TextWebSocketFrame(
                                     JsonUtils.objectToJson(dataContentMsg)));
                 } else {
-                    // 用户离线 TODO 推送消息
+                    // 用户离线 推送消息
+                    asynCenter.sendPush(sender.getNickname(), msgText, receiver.getCid());
                 }
             }
         } else if(action.equals(MsgActionEnum.SIGNED.type)) {

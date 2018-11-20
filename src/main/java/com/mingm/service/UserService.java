@@ -30,6 +30,13 @@ public interface UserService {
     Users queryUserForLogin(String username, String pwd);
 
     /**
+     * 重新登陆后更新cid
+     * @param username
+     * @param cid
+     */
+    void updateCid(String username, String cid);
+
+    /**
      * 用户注册
      * @param user
      * @return
