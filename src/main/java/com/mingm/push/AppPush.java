@@ -19,10 +19,10 @@ import java.util.List;
 public class AppPush {
 
     //定义常量, appId、appKey、masterSecret 采用本文档 "第二步 获取访问凭证 "中获得的应用配置
-    private static String appId = "eHYyrdSvCJAwjC3F7c5CQ5";
-    private static String appKey = "Y3hoWwDBvl62y2EQaXNOi1";
-    private static String masterSecret = "kaeQRTUOYK8vMFmE3JJxMA";
-    private static String url = "http://sdk.open.api.igexin.com/apiex.htm";
+    private static String appId = "";
+    private static String appKey = "";
+    private static String masterSecret = "";
+    private static String url = "";
 
     public static void main(String[] args) throws IOException {
 
