@@ -17,10 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PushtoApp {
 
-    private static String appId = "eHYyrdSvCJAwjC3F7c5CQ5";
-    private static String appKey = "Y3hoWwDBvl62y2EQaXNOi1";
-    private static String masterSecret = "kaeQRTUOYK8vMFmE3JJxMA";
-    private static String url = "http://sdk.open.api.igexin.com/apiex.htm";
+    private static String appId = "";
+    private static String appKey = "";
+    private static String masterSecret = "";
+    private static String url = "";
 
     public static void send (String title, String text, String cid) throws Exception {
 
